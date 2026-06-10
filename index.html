@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>RGL ETP</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: radial-gradient(ellipse at 20% 30%, #0a0a2a, #000000);
+            font-family: 'Segoe UI', 'Courier New', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            animation: gridPulse 4s ease-in-out infinite;
+        }
+
+        @keyframes gridPulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.6; }
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            width: 90%;
+            max-width: 600px;
+            padding: 20px;
+        }
+
+        .hologram-card {
+            background: rgba(10, 20, 40, 0.6);
+            backdrop-filter: blur(15px);
+            border-radius: 30px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+            padding: 40px 30px;
+            transition: all 0.3s ease;
+        }
+
+        .hologram-card:hover {
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.4);
+            border-color: rgba(0, 255, 255, 0.6);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .glitch-text {
+            font-size: 28px;
+            font-weight: bold;
+            color: #0ff;
+            text-shadow: 0 0 5px #0ff, 0 0 10px #0ff, 0 0 20px #0ff;
+            letter-spacing: 3px;
+            animation: glitch 3s infinite;
+        }
+
+        @keyframes glitch {
+            0%, 100% { transform: skew(0deg, 0deg); }
+            96% { transform: skew(5deg, 2deg); text-shadow: -2px 0 #f0f; }
+            97% { transform: skew(-3deg, -1deg); text-shadow: 2px 0 #0ff; }
+        }
+
+        .subtitle {
+            color: #8af;
+            font-size: 12px;
+            margin-top: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .ph-display {
+            text-align: center;
+            margin: 40px 0;
+        }
+
+        .ph-label {
+            color: #0ff;
+            font-size: 16px;
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .ph-value {
+            font-size: 120px;
+            font-weight: bold;
+            color: #0ff;
+            text-shadow: 0 0 20px #0ff, 0 0 40px #0ff;
+            animation: pulse 2s ease-in-out infinite;
+            line-height: 1;
+        }
+
+        @keyframes pulse {
+            0%, 100% { text-shadow: 0 0 20px #0ff, 0 0 40px #0ff; }
+            50% { text-shadow: 0 0 30px #0ff, 0 0 60px #0ff; }
+        }
+
+        .ph-unit {
+            font-size: 32px;
+            color: #6af;
+            margin-left: 10px;
+        }
+
+        .gauge-container {
+            width: 200px;
+            height: 200px;
+            margin: 20px auto;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .status-badge {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0, 255, 255, 0.05);
+            border-radius: 15px;
+            border-left: 3px solid #0ff;
+        }
+
+        .water-type {
+            font-size: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .timestamp {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(0, 255, 255, 0.2);
+        }
+
+        .timestamp-label {
+            color: #8af;
+            font-size: 11px;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .timestamp-value {
+            color: #0ff;
+            font-size: 28px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            letter-spacing: 3px;
+            text-shadow: 0 0 8px #0ff;
+        }
+
+        .timestamp-date {
+            color: #6af;
+            font-size: 16px;
+            margin-top: 8px;
+            font-family: monospace;
+        }
+
+        .refresh-btn {
+            display: block;
+            width: 180px;
+            margin: 30px auto 0;
+            padding: 12px 24px;
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid #0ff;
+            border-radius: 25px;
+            color: #0ff;
+            font-family: monospace;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loader {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(0, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #0ff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            text-align: center;
+            color: #f66;
+            padding: 20px;
+            background: rgba(255, 0, 0, 0.1);
+            border-radius: 15px;
+            border: 1px solid #f66;
+        }
+
+        .live-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: #0f0;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: blink 1s infinite;
+            vertical-align: middle;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1) 0px, rgba(0, 0, 0, 0.1) 2px, transparent 2px, transparent 4px);
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        @media (max-width: 600px) {
+            .ph-value { font-size: 80px; }
+            .glitch-text { font-size: 20px; }
+            .timestamp-value { font-size: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-overlay"></div>
+    <div class="scanlines"></div>
+    
+    <div class="container">
+        <div class="hologram-card">
+            <div class="header">
+                <div class="glitch-text">pH MONITOR</div>
+                <div class="subtitle">RGL ETP ONLINE pH MONITOR SYSTEM // on test</div>
+            </div>
+            <div id="content">
+                <div class="loading">
+                    <div class="loader"></div>
+                    <div style="color: #0ff; margin-top: 20px;">INITIALIZING QUANTUM LINK...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // UPDATE THIS WITH YOUR GOOGLE APPS SCRIPT URL
+        const SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbx1utp-3ttzJhGVaU8Q67-6U7wtfsmWaAbAdKnfw_SCB59gSnTt014cLi-PT3QXVfYi/exec";
+        
+        let refreshInterval = null;
+
+        function parseTimestamp(timestamp) {
+            if (!timestamp || timestamp === "undefined" || timestamp === "null") {
+                return { time: "--:--:--", date: "--/--/----" };
+            }
+            
+            try {
+                let date;
+                
+                // Parse "YYYY-MM-DD HH:MM:SS" format
+                const match = timestamp.match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})/);
+                if (match) {
+                    date = new Date(Date.UTC(
+                        parseInt(match[1]), 
+                        parseInt(match[2]) - 1, 
+                        parseInt(match[3]), 
+                        parseInt(match[4]), 
+                        parseInt(match[5]), 
+                        parseInt(match[6])
+                    ));
+                    
+                    const hours = date.getUTCHours().toString().padStart(2, '0');
+                    const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+                    const seconds = date.getUTCSeconds().toString().padStart(2, '0');
+                    const day = date.getUTCDate().toString().padStart(2, '0');
+                    const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+                    const year = date.getUTCFullYear();
+                    
+                    return {
+                        time: `${hours}:${minutes}:${seconds}`,
+                        date: `${day}/${month}/${year}`
+                    };
+                }
+                
+                // Try direct Date parsing
+                date = new Date(timestamp);
+                if (!isNaN(date.getTime())) {
+                    const hours = date.getHours().toString().padStart(2, '0');
+                    const minutes = date.getMinutes().toString().padStart(2, '0');
+                    const seconds = date.getSeconds().toString().padStart(2, '0');
+                    const day = date.getDate().toString().padStart(2, '0');
+                    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                    const year = date.getFullYear();
+                    
+                    return {
+                        time: `${hours}:${minutes}:${seconds}`,
+                        date: `${day}/${month}/${year}`
+                    };
+                }
+                
+                return { time: "--:--:--", date: "--/--/----" };
+            } catch (e) {
+                console.error("Parse error:", e);
+                return { time: "--:--:--", date: "--/--/----" };
+            }
+        }
+
+        function getWaterType(pH) {
+            if (pH < 3.0) return { type: "STRONG ACID", icon: "", color: "#f44" };
+            if (pH < 5.0) return { type: "ACIDIC", icon: "", color: "#fa4" };
+            if (pH < 6.5) return { type: "SLIGHTLY ACIDIC", icon: "", color: "#af4" };
+            if (pH < 7.5) return { type: "NEUTRAL", icon: "", color: "#0ff" };
+            if (pH < 9.0) return { type: "SLIGHTLY ALKALINE", icon: "", color: "#4af" };
+            if (pH < 11.0) return { type: "ALKALINE", icon: "", color: "#a4f" };
+            return { type: "STRONG BASE", icon: "", color: "#f4a" };
+        }
+
+        function drawGauge(pH) {
+            const canvas = document.getElementById('gaugeCanvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const size = canvas.width;
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const radius = size * 0.4;
+            
+            ctx.clearRect(0, 0, size, size);
+            
+            const angle = (pH / 14) * 360;
+            const radian = (angle - 90) * Math.PI / 180;
+            
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.2)';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            
+            const gradient = ctx.createConicGradient(0, centerX, centerY);
+            gradient.addColorStop(0, '#0f0');
+            gradient.addColorStop(0.25, '#ff0');
+            gradient.addColorStop(0.5, '#f90');
+            gradient.addColorStop(0.75, '#f00');
+            gradient.addColorStop(1, '#f0f');
+            
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, -Math.PI/2, radian);
+            ctx.strokeStyle = gradient;
+            ctx.lineWidth = 6;
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius - 10, 0, 2 * Math.PI);
+            ctx.fillStyle = 'rgba(0, 20, 40, 0.5)';
+            ctx.fill();
+            
+            ctx.fillStyle = '#0ff';
+            ctx.font = 'bold 20px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(pH.toFixed(1), centerX, centerY);
+            
+            for (let i = 0; i <= 14; i++) {
+                const tickAngle = (i / 14) * 360 - 90;
+                const tickRadian = tickAngle * Math.PI / 180;
+                const x1 = centerX + (radius - 5) * Math.cos(tickRadian);
+                const y1 = centerY + (radius - 5) * Math.sin(tickRadian);
+                const x2 = centerX + (radius + 5) * Math.cos(tickRadian);
+                const y2 = centerY + (radius + 5) * Math.sin(tickRadian);
+                
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.strokeStyle = 'rgba(0, 255, 255, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        async function fetchLatestPH() {
+            try {
+                const url = SHEETS_API_URL + "?action=getLatest&t=" + Date.now();
+                console.log("Fetching from:", url);
+                
+                const response = await fetch(url, { method: 'GET', cache: 'no-cache' });
+                
+                if (!response.ok) throw new Error('HTTP error: ' + response.status);
+                
+                const data = await response.json();
+                console.log("Received data:", data);
+                return data;
+            } catch (error) {
+                console.error('Fetch error:', error);
+                throw error;
+            }
+        }
+
+        function updateUI(data) {
+            const pH = parseFloat(data.pH);
+            const waterInfo = getWaterType(pH);
+            
+            let timestampData = { time: "--:--:--", date: "--/--/----" };
+            
+            // Try to get timestamp from different fields
+            if (data.timestamp && data.timestamp !== "undefined") {
+                timestampData = parseTimestamp(data.timestamp);
+            } else if (data.time && data.date) {
+                timestampData = parseTimestamp(data.date + " " + data.time);
+            }
+            
+            const contentDiv = document.getElementById('content');
+            
+            contentDiv.innerHTML = `
+                <div class="ph-display">
+                    <div class="ph-label">
+                        <span class="live-indicator"></span>
+                        CURRENT pH LEVEL
+                    </div>
+                    <div class="ph-value">
+                        ${pH.toFixed(1)}<span class="ph-unit">pH</span>
+                    </div>
+                </div>
+                
+                <div class="gauge-container">
+                    <canvas id="gaugeCanvas" width="200" height="200"></canvas>
+                </div>
+                
+                <div class="status-badge">
+                    <div class="water-type" style="color: ${waterInfo.color}">
+                        ${waterInfo.icon} ${waterInfo.type} ${waterInfo.icon}
+                    </div>
+                </div>
+                
+                <div class="timestamp">
+                    <div class="timestamp-label">LAST READING</div>
+                    <div class="timestamp-value">${timestampData.time}</div>
+                    <div class="timestamp-date">${timestampData.date}</div>
+                </div>
+                
+                <div class="refresh-btn" onclick="refreshData()">
+                    ⟳ INITIATE SCAN
+                </div>
+            `;
+            
+            setTimeout(() => drawGauge(pH), 100);
+        }
+
+        function showError(message) {
+            const contentDiv = document.getElementById('content');
+            contentDiv.innerHTML = `
+                <div class="error-message">
+                    ⚠️ QUANTUM LINK ERROR ⚠️<br><br>
+                    ${message}<br><br>
+                    <div class="refresh-btn" onclick="refreshData()">
+                        ⟳ RETRY CONNECTION
+                    </div>
+                </div>
+            `;
+        }
+
+        async function refreshData() {
+            const contentDiv = document.getElementById('content');
+            contentDiv.innerHTML = `
+                <div class="loading">
+                    <div class="loader"></div>
+                    <div style="color: #0ff; margin-top: 20px;">SYNCHRONIZING WITH DATACORE...</div>
+                </div>
+            `;
+            
+            try {
+                const data = await fetchLatestPH();
+                if (data && data.success === true && data.pH) {
+                    updateUI(data);
+                } else if (data && data.pH) {
+                    updateUI(data);
+                } else {
+                    showError("Unable to decode telemetry data: " + JSON.stringify(data));
+                }
+            } catch (error) {
+                showError("Connection to telemetry core failed: " + error.message);
+            }
+        }
+
+        function init() {
+            refreshData();
+            if (refreshInterval) clearInterval(refreshInterval);
+            refreshInterval = setInterval(refreshData, 30000);
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
